@@ -297,12 +297,6 @@ Format: `type(scope): imperative summary` — ≤72 chars, lowercase type.
 
 History is searchable by scope: `git log --oneline --grep "^feat(domain-schema)"`.
 
-## 11. Build order (planned)
+## 11. Build plan
 
-1. Workspace scaffold, tooling, lefthook/commitlint/gitleaks, Vitest projects (unit/integration/functional), Playwright config, `verify*` scripts. Empty packages typecheck and `pnpm verify` passes.
-2. `domain-schema`: `docs/features/` ACs, wire schemas, `rules.md`, rules with unit tests (≥95% coverage), JSON Schema/OpenAPI generation and drift check.
-3. Contract suite (red): schema conformance + Pact verifier scaffold → `api-nextjs` with `LLM_MODE=mock` (green), plus its unit/integration/functional tests.
-4. AI SDK structured-output spike against `MODEL_FAST` and `MODEL_REASONING` (§8.2); build the record/replay `fetch` and record the first cassettes.
-5. Live pipeline stages 1 → 2 → 3, test layers per §6.3 for each stage.
-6. Web client: unit → integration (msw) → Pact consumer → Playwright functional + axe.
-7. `journeys/` starting set; `pnpm verify:integrated` green.
+The build order and its progress live in **`docs/work-breakdown.md`**, not in this file. Work one unit (WU) at a time, respect its dependencies, and update its status, commits and notes in that file when the unit is done.
