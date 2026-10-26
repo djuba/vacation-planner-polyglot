@@ -293,10 +293,22 @@ Format: `type(scope): imperative summary` — ≤72 chars, lowercase type.
 - **Scopes (enforced list):** `web`, `api-nextjs`, `api-fastapi`, `api-go`, `domain-schema`, `contract`, `journeys`, `pipeline`, `repo`
 - **Breaking contract changes:** `feat(domain-schema)!: …` plus a `BREAKING CHANGE:` footer, and bump `contractVersion`.
 - One logical change per commit. Tests go in the same commit as the behavior they cover. Regenerate `generated/` and re-record affected cassettes/pacts in the same commit as the change that caused them.
-- Only commit when the user asks. Commit messages end with the attribution trailer configured for the session.
+- Never commit without the user's explicit approval of the specific changes (§12). Commit messages end with the attribution trailer configured for the session.
 
 History is searchable by scope: `git log --oneline --grep "^feat(domain-schema)"`.
 
 ## 11. Build plan
 
 The build order and its progress live in **`docs/work-breakdown.md`**, not in this file. Work one unit (WU) at a time, respect its dependencies, and update its status, commits and notes in that file when the unit is done.
+
+## 12. Session workflow (non-negotiable)
+
+Every work unit runs through **`/start-wu WU-xx`** (`.claude/skills/start-wu/SKILL.md`), which holds the full procedure. The rules it enforces:
+
+1. **Plan before code.** The main agent writes `docs/plans/WU-xx.md` and **stops for the user's approval**. No implementation starts on an unapproved plan.
+2. **The main agent (Opus) orchestrates.** Plan tasks that are well specified, cover a known set of files and are mechanical go to the `wu-implementer` subagent (Sonnet, `.claude/agents/wu-implementer.md`). Design, contract and `CLAUDE.md` changes, spikes, debugging across layers, integration, and review of all subagent output stay with the main agent. Small tasks stay with the main agent too, because a subagent's cold start costs more than it saves.
+3. **Subagents never commit**, never call live LLM APIs, and never edit `CLAUDE.md`, the work breakdown or plan files.
+4. **The main agent verifies.** It runs `pnpm verify` itself before review.
+5. **Review before commit.** Changes stay **uncommitted** for the user to review in VS Code. The main agent presents a summary, verification results, a grouped file list and the proposed commit messages (no full diff unless asked), then **stops**.
+6. **Commit only on explicit approval** of those changes. `.claude/settings.json` also makes every `git commit` prompt for permission. Approval for one set of changes does not carry over to later changes.
+7. **Material deviation from an approved plan** means pausing and telling the user before continuing.
