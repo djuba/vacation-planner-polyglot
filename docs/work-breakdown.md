@@ -16,7 +16,7 @@ The implementation plan, as units of work (WUs). `CLAUDE.md` holds the rules; th
 
 | ID | Unit | Depends on | Status |
 |---|---|---|---|
-| WU-01 | Workspace scaffold | — | todo |
+| WU-01 | Workspace scaffold | — | done |
 | WU-02 | Quality gates & test harness | WU-01 | todo |
 | WU-03 | AI SDK structured-output spike | WU-01 | todo |
 | WU-04 | Contract wire schemas & generation | WU-02, WU-03 | todo |
@@ -44,7 +44,7 @@ WU-01 ─┬─ WU-02 ─┐
 ---
 
 ## WU-01 — Workspace scaffold
-**Status:** todo · **Depends on:** — · **Commits:**
+**Status:** done · **Depends on:** — · **Commits:** 5461ed4, 038756f
 
 **Goal:** an empty monorepo that installs and typechecks on Windows and POSIX.
 
@@ -65,6 +65,13 @@ WU-01 ─┬─ WU-02 ─┐
 - A deliberate import of `@vp/domain-schema/rules` from `apps/` fails lint.
 
 **Notes:**
+- TypeScript is pinned at **6.0.3**, not 7.x. TS 7 is the native compiler, and `typescript-eslint@8.72.1` peers on `typescript <6.1.0`. Revisit once typescript-eslint supports TS 7.
+- TS 6 defaults `types` to `[]`, so each package must opt in, e.g. `"types": ["node"]`.
+- Shared tool versions live in the pnpm `catalog:` in `pnpm-workspace.yaml`. WU-04 should add `zod` there to meet the single-version rule. `pnpm why zod` is still deferred until zod exists.
+- Import boundaries (`apps/` → no rules or backends; `journeys/` → no workspace imports) live in `eslint.config.js`. `scripts/lint-boundary-probe.mjs` asserts them on every `pnpm lint`. WU-02 may move the probe into Vitest.
+- Prettier ignores `*.md` and `.claude/` to keep hand-authored doc tables compact.
+- Node 24.22.1 (LTS "Krypton") and pnpm 12.15.0.
+- The dev machine has no `python` on PATH. Use node for one-off scripts.
 
 ---
 
