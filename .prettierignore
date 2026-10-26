@@ -1,0 +1,11 @@
+pnpm-lock.yaml
+packages/domain-schema/generated/
+contracts/pacts/
+.llm-cassettes/
+coverage/
+.next/
+dist/
+
+# hand-authored docs keep compact tables; Claude Code harness config is tool-managed
+*.md
+.claude/
