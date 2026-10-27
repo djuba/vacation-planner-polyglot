@@ -5,9 +5,10 @@ The implementation plan, as units of work (WUs). `CLAUDE.md` holds the rules; th
 ## How to use this file
 
 - **Do one WU per session** where possible. Start a session by naming the WU (e.g. "start WU-04").
-- **Do not start a WU until everything in its Depends-on is `done`.**
+- **Do not start a WU until everything in its Depends-on is `done` on `main`**, i.e. its PR is merged.
+- **Each WU runs on its own branch** (`wu/WU-xx-<slug>`) and ends with a pull request that the user merges as a merge commit with semi-linear history (CLAUDE.md §10).
 - **Every WU ends with `pnpm verify` green** (from WU-02 onward) and its Definition of done met.
-- **When a WU finishes**, set its status to `done`, fill in its Commits, and record anything learned under Notes, in a closing `docs(repo): close WU-xx` commit.
+- **When a WU finishes**, set its status to `done`, put its PR link under Commits, and record anything learned under Notes, in a closing `docs(repo): close WU-xx` commit on the WU branch.
 - **Each WU follows the `/start-wu` workflow** (CLAUDE.md §12); its plan lives in `docs/plans/WU-xx.md`.
 - **Scope changes go here first.** If a WU turns out too big, split it (`WU-09a`, `WU-09b`) rather than letting it sprawl. If a decision changes a rule, update `CLAUDE.md` in the same commit.
 - **Status values:** `todo` · `in-progress` · `done` · `blocked (reason)`

@@ -1,6 +1,6 @@
 ---
 name: start-wu
-description: Run the plan → approve → orchestrate → verify → review → commit workflow for one work unit from docs/work-breakdown.md. Invoke as /start-wu WU-xx.
+description: Run the branch → plan → approve → orchestrate → verify → review → commit → pull request workflow for one work unit from docs/work-breakdown.md. Invoke as /start-wu WU-xx.
 argument-hint: WU-xx
 disable-model-invocation: true
 ---
@@ -11,8 +11,10 @@ Follow these phases in order. **Phases 1 and 4 end with a hard stop:** do not co
 
 ## Phase 0 — Preconditions
 - Read the $ARGUMENTS entry in `docs/work-breakdown.md`.
-- Confirm every unit in its Depends-on is `done`. If not, stop and say which are not.
 - Confirm `git status` is clean. If it isn't, stop and show the user what's there.
+- Update `main`: `git switch main && git pull --ff-only`. A unit is `done` only once its pull request is merged, so dependency status must be read from an up-to-date `main`.
+- Confirm every unit in its Depends-on is `done` on `main`. If not, stop and say which are not.
+- Create the unit's branch from `main`: `git switch -c wu/$ARGUMENTS-<slug>`, where `<slug>` is the unit's title in kebab-case (e.g. `wu/WU-02-quality-gates`). All of the unit's work happens on this branch; never commit to `main` directly.
 - Set the unit's status to `in-progress`.
 
 ## Phase 1 — Plan (Opus, main agent)
@@ -60,7 +62,16 @@ Do **not** paste the full diff unless the user asks for it.
 
 **STOP. Do not commit until the user explicitly approves.** Apply any requested changes, re-verify, and re-present.
 
-## Phase 5 — Commit & close (only after approval)
-- Create the approved commits in order, each ending with the session's attribution trailer.
-- Then update `docs/work-breakdown.md`: status `done`, the hashes of the commits just made, and anything learned in Notes. Commit that as a final `docs(repo): close $ARGUMENTS` commit; this commit is part of the approved series.
-- Report the final `git log --oneline` for the unit.
+## Phase 5 — Commit, push & open the pull request (only after approval)
+- Create the approved commits in order on the unit's branch, each ending with the session's attribution trailer.
+- Push the branch (`git push -u origin HEAD`) and open the pull request with `gh pr create --base main`:
+  - **Title:** `$ARGUMENTS: <unit title>`.
+  - **Body:** the Phase 4 summary (Definition of done with statuses, verification results, deviations), a link to `docs/plans/$ARGUMENTS.md`, and the session's PR attribution line.
+- Update `docs/work-breakdown.md`: status `done`, **Commits:** the PR link (commit hashes can change if the branch is rebased; the PR link can't), and anything learned in Notes. Commit that as a final `docs(repo): close $ARGUMENTS` commit and push it. This commit is part of the approved series; the status becomes true on `main` when the PR merges.
+- Report the PR URL and the branch's `git log --oneline main..HEAD`.
+
+## Phase 6 — Merge (the user merges)
+History on `main` follows GitLab's **merge commit with semi-linear history** (CLAUDE.md §10). Every PR lands as a merge commit, and only when its branch already contains the tip of `main`. GitHub allows only merge commits. The up-to-date rule is a convention, so check it yourself before telling the user the PR is ready to merge.
+- **The user merges the PR** with "Create a merge commit". Never merge it yourself unless asked.
+- If `main` has moved since the branch was created, rebase the branch instead of merging `main` into it: `git fetch origin && git rebase origin/main`, re-run `pnpm verify`, then `git push --force-with-lease`. Ask the user before force-pushing. Never use GitHub's "Update branch" merge, which breaks the linear segment.
+- After the merge: `git switch main && git pull --ff-only && git branch -d wu/$ARGUMENTS-<slug>`. GitHub deletes the remote branch automatically.
