@@ -233,7 +233,7 @@ A backend runs both halves with `LLM_MODE=replay` and must pass both before it c
 | **Integrated gate** (≈ deploy) | `pnpm verify:integrated` | build all, start the full stack, journeys `@smoke` + `@critical` | manual / before tagging a release |
 | **Full** (≈ nightly) | `pnpm verify:full` | journeys `@full` across every implemented backend; provider contract tests against every implemented backend | manual |
 
-The scripts are CI-ready (each is a single command), but nothing depends on a hosted CI service. Performance testing is out of scope until there is a deployed environment; until then, per-stage latency is logged (§7.3).
+Each gate is a single command. **GitHub Actions mirrors the project gate** on every PR and push to `main`: `.github/workflows/verify.yml`, job `verify`, which is the required status check for merging (§10). The local gates stay the source of truth, and CI runs the same command. CI never holds secrets: gated tests never call a live LLM (§6.1). The integrated and full gates stay local. Performance testing is out of scope until there is a deployed environment; until then, per-stage latency is logged (§7.3).
 
 ### 6.8 What tests do not cover
 Tests prove plumbing, contracts and rules. They do **not** judge whether recommendations are good. LLM output quality is assessed separately by an opt-in, non-gating eval script (`pnpm eval`, live, costs money) once the pipeline exists.
@@ -297,6 +297,12 @@ Format: `type(scope): imperative summary` — ≤72 chars, lowercase type.
 
 History is searchable by scope: `git log --oneline --grep "^feat(domain-schema)"`.
 
+**Branches & merging.** Each work unit runs on a `wu/WU-xx-<slug>` branch and lands through a pull request. Other changes use `<type>/<short-slug>` branches (e.g. `chore/branch-pr-workflow`). PRs merge with **merge commit with semi-linear history** (GitLab's term):
+- every PR lands as a merge commit; the GitHub repo allows no other merge method and deletes branches after merge;
+- before merging, the branch must contain the tip of `main`. If `main` has moved, rebase onto `origin/main`, re-verify, and `git push --force-with-lease`. Never merge `main` into the branch; GitHub's "Update branch" button is disabled.
+
+Branch protection on `main` enforces this. It requires a PR (0 approvals) and the `verify` status check (§6.7), on a branch that is up to date with `main`. So what CI verified is exactly the tree that lands. Admins may bypass protection only in an emergency, and must say so in the PR. The user performs the merge. `git log --first-parent main` then reads as one line per change.
+
 ## 11. Build plan
 
 The build order and its progress live in **`docs/work-breakdown.md`**, not in this file. Work one unit (WU) at a time, respect its dependencies, and update its status, commits and notes in that file when the unit is done.
@@ -309,6 +315,7 @@ Every work unit runs through **`/start-wu WU-xx`** (`.claude/skills/start-wu/SKI
 2. **The main agent (Opus) orchestrates.** Plan tasks that are well specified, cover a known set of files and are mechanical go to the `wu-implementer` subagent (Sonnet, `.claude/agents/wu-implementer.md`). Design, contract and `CLAUDE.md` changes, spikes, debugging across layers, integration, and review of all subagent output stay with the main agent. Small tasks stay with the main agent too, because a subagent's cold start costs more than it saves.
 3. **Subagents never commit**, never call live LLM APIs, and never edit `CLAUDE.md`, the work breakdown or plan files.
 4. **The main agent verifies.** It runs `pnpm verify` itself before review.
-5. **Review before commit.** Changes stay **uncommitted** for the user to review in VS Code. The main agent presents a summary, verification results, a grouped file list and the proposed commit messages (no full diff unless asked), then **stops**.
+5. **Review before commit.** Changes stay **uncommitted** on the unit's branch for the user to review in VS Code. The main agent presents a summary, verification results, a grouped file list and the proposed commit messages (no full diff unless asked), then **stops**.
 6. **Commit only on explicit approval** of those changes. `.claude/settings.json` also makes every `git commit` prompt for permission. Approval for one set of changes does not carry over to later changes.
 7. **Material deviation from an approved plan** means pausing and telling the user before continuing.
+8. **One branch and one PR per unit.** The unit starts on `wu/WU-xx-<slug>` cut from an up-to-date `main`. After the approved commits, the main agent pushes the branch and opens a PR. **The user merges it**, as a merge commit with semi-linear history (§10). A unit counts as `done` only once its PR is merged to `main`.
