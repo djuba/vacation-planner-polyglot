@@ -233,7 +233,7 @@ A backend runs both halves with `LLM_MODE=replay` and must pass both before it c
 | **Integrated gate** (≈ deploy) | `pnpm verify:integrated` | build all, start the full stack, journeys `@smoke` + `@critical` | manual / before tagging a release |
 | **Full** (≈ nightly) | `pnpm verify:full` | journeys `@full` across every implemented backend; provider contract tests against every implemented backend | manual |
 
-The scripts are CI-ready (each is a single command), but nothing depends on a hosted CI service. Performance testing is out of scope until there is a deployed environment; until then, per-stage latency is logged (§7.3).
+Each gate is a single command. **GitHub Actions mirrors the project gate** on every PR and push to `main`: `.github/workflows/verify.yml`, job `verify`, which is the required status check for merging (§10). The local gates stay the source of truth, and CI runs the same command. CI never holds secrets: gated tests never call a live LLM (§6.1). The integrated and full gates stay local. Performance testing is out of scope until there is a deployed environment; until then, per-stage latency is logged (§7.3).
 
 ### 6.8 What tests do not cover
 Tests prove plumbing, contracts and rules. They do **not** judge whether recommendations are good. LLM output quality is assessed separately by an opt-in, non-gating eval script (`pnpm eval`, live, costs money) once the pipeline exists.
@@ -299,9 +299,9 @@ History is searchable by scope: `git log --oneline --grep "^feat(domain-schema)"
 
 **Branches & merging.** Each work unit runs on a `wu/WU-xx-<slug>` branch and lands through a pull request. Other changes use `<type>/<short-slug>` branches (e.g. `chore/branch-pr-workflow`). PRs merge with **merge commit with semi-linear history** (GitLab's term):
 - every PR lands as a merge commit; the GitHub repo allows no other merge method and deletes branches after merge;
-- before merging, the branch must contain the tip of `main`. If `main` has moved, rebase onto `origin/main` and re-verify. Never merge `main` into the branch.
+- before merging, the branch must contain the tip of `main`. If `main` has moved, rebase onto `origin/main`, re-verify, and `git push --force-with-lease`. Never merge `main` into the branch; GitHub's "Update branch" button is disabled.
 
-The up-to-date rule is a convention, not branch protection. Units run one at a time, so `main` rarely moves under a branch. The user performs the merge. `git log --first-parent main` then reads as one line per change.
+Branch protection on `main` enforces this. It requires a PR (0 approvals) and the `verify` status check (§6.7), on a branch that is up to date with `main`. So what CI verified is exactly the tree that lands. Admins may bypass protection only in an emergency, and must say so in the PR. The user performs the merge. `git log --first-parent main` then reads as one line per change.
 
 ## 11. Build plan
 

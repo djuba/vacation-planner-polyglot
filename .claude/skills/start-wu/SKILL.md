@@ -71,7 +71,8 @@ Do **not** paste the full diff unless the user asks for it.
 - Report the PR URL and the branch's `git log --oneline main..HEAD`.
 
 ## Phase 6 — Merge (the user merges)
-History on `main` follows GitLab's **merge commit with semi-linear history** (CLAUDE.md §10). Every PR lands as a merge commit, and only when its branch already contains the tip of `main`. GitHub allows only merge commits. The up-to-date rule is a convention, so check it yourself before telling the user the PR is ready to merge.
+History on `main` follows GitLab's **merge commit with semi-linear history** (CLAUDE.md §10). Every PR lands as a merge commit, and only when its branch already contains the tip of `main`. GitHub enforces it: only merge commits are allowed, and branch protection requires the `verify` check to pass on a branch that is up to date with `main`.
+- Before telling the user the PR is ready to merge, confirm the `verify` check passed: `gh pr checks --watch`. If it failed, fix it on the branch; never ask the user to bypass protection.
 - **The user merges the PR** with "Create a merge commit". Never merge it yourself unless asked.
 - If `main` has moved since the branch was created, rebase the branch instead of merging `main` into it: `git fetch origin && git rebase origin/main`, re-run `pnpm verify`, then `git push --force-with-lease`. Ask the user before force-pushing. Never use GitHub's "Update branch" merge, which breaks the linear segment.
 - After the merge: `git switch main && git pull --ff-only && git branch -d wu/$ARGUMENTS-<slug>`. GitHub deletes the remote branch automatically.
